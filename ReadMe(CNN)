@@ -1,0 +1,179 @@
+Simple CNN + Classical Classifiers — README (Script 2)
+Purpose
+
+This script trains a lightweight CNN on your ASL dataset, evaluates it, then extracts CNN features and trains several classical classifiers (Logistic Regression, KNN, Decision Tree, Random Forest) on the learned features. It reports metrics (accuracy, F1, Cohen’s Kappa, ROC-AUC), saves confusion matrices, sample predictions, and classifier artifacts.
+
+Main script file name (suggested): simple_cnn_asl_with_classical_classifiers.py
+
+Quick start
+
+Create & activate a virtual environment:
+
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# macOS / Linux
+source venv/bin/activate
+
+
+Install dependencies:
+
+pip install -r requirements_simple_cnn.txt
+
+
+Suggested requirements_simple_cnn.txt:
+
+numpy
+opencv-python
+matplotlib
+seaborn
+scikit-learn
+tensorflow>=2.10
+joblib
+
+
+If you plan to use opencv-contrib-python for advanced features, install it instead of opencv-python.
+
+Update config variables at the top of the script (if needed):
+
+DATASET_PATH = r"C:\path\to\split\asl_dataset"   # dataset root (contains class subfolders)
+IMG_SIZE = (64, 64)        # change if required
+CHANNELS = 1               # 1 for grayscale, 3 for RGB (match how model was trained)
+MAX_PER_CLASS = 500
+TEST_SPLIT = 0.2
+VAL_SPLIT = 0.1
+BATCH_SIZE = 32
+EPOCHS = 30
+OUT_DIR = "runs_simple_cnn"
+
+
+Run the script:
+
+python simple_cnn_asl_with_classical_classifiers.py
+
+What the script does (high level)
+
+Loads dataset from DATASET_PATH (expects class_name/img.jpg structure).
+
+Preprocesses images (resize, normalize, optional grayscale).
+
+Splits into train/val/test with deterministic seed.
+
+Builds and trains a simple CNN (with early stopping / LR reduction / checkpoint).
+
+Evaluates CNN on test set — prints metrics, saves confusion matrix and training curves.
+
+Extracts features from the penultimate dense layer (feat_dense) for train/val/test.
+
+Trains classical classifiers on extracted features and evaluates them (metrics printed + saved).
+
+Tests robustness of classical classifiers under Gaussian noise (σ = 0.05, 0.10, 0.15).
+
+Saves models and artifacts in OUT_DIR.
+
+Outputs / Artifacts
+
+All outputs saved under OUT_DIR (default runs_simple_cnn):
+
+best_simple_cnn.keras — best CNN checkpoint (validation loss).
+
+final_simple_cnn.keras — final saved CNN model.
+
+training_curves.png — accuracy & loss plots across epochs.
+
+confusion_matrix.png — CNN test confusion matrix.
+
+sample_predictions.png — grid of sample test predictions (T: true | P: pred).
+
+clf_<Name>.joblib — saved classical classifier pipelines (one per classifier).
+
+cm_<prefix>.png — confusion matrix images for each classical classifier.
+
+Console prints:
+
+Per-step information (loaded counts, training logs).
+
+Final metrics: accuracy, precision/recall/F1 (macro & weighted), Cohen’s Kappa, ROC-AUC (if probabilities available).
+
+Robustness results (accuracy drops under noise) for classical classifiers.
+
+Reproducibility & determinism
+
+Script already sets random seeds:
+
+SEED = 42
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+
+
+For more deterministic behavior (reduces non-determinism on some platforms), you can add at top:
+
+import os, random
+os.environ['PYTHONHASHSEED'] = str(SEED)
+random.seed(SEED)
+# Optionally control TF determinism (may reduce performance)
+os.environ['TF_DETERMINISTIC_OPS'] = '1'
+
+
+Note: bitwise identical results across different machines/GPU drivers is not guaranteed.
+
+Memory / speed tips
+
+Reduce MAX_PER_CLASS (e.g., to 100) during development to speed up runs.
+
+Decrease EPOCHS for quick tests.
+
+Use a GPU (TensorFlow detects CUDA) to speed CNN training; otherwise CPU training is slower.
+
+If memory is tight, lower BATCH_SIZE.
+
+Important implementation notes
+
+Channels: If you set CHANNELS=1, images are converted to grayscale. Make sure this matches the model input expectation.
+
+Feature extraction: The function extract_features_from_model builds a new functional model up to the layer named 'feat_dense'. If you change layer names, update that function.
+
+Scaling for classical classifiers: The script standard-scales CNN features before training classical classifiers. LogisticRegression and KNN are fit inside a pipeline that includes scaling (safe choice).
+
+Saving classical models: Uses joblib.dump to save fitted models; re-load them with joblib.load.
+
+Troubleshooting
+
+No images loaded / wrong dataset structure
+
+Ensure DATASET_PATH contains only class subdirectories (no nested directories) and image files inside them.
+
+Hidden files (like .DS_Store) are ignored because the script checks file extensions.
+
+cv2.imread returns None
+
+Some image files may be corrupted or in unsupported formats. The script skips missing/invalid files.
+
+Model trains poorly / overfits
+
+Try increasing data augmentation (not included by default) or add more regularization (dropout, weight decay).
+
+Reduce model capacity or gather more training data.
+
+SIFT/ORB or opencv errors
+
+If you plan to enable SIFT elsewhere, install opencv-contrib-python. For the current script SIFT is not required.
+
+ROC-AUC calculation fails for multiclass
+
+ROC-AUC (OvR) requires either predict_proba output or one-hot binarized true labels; script already handles this but will print an error if shapes mismatch.
+
+Example reproducible command (Windows / PowerShell)
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements_simple_cnn.txt
+# optionally edit the script variables (DATASET_PATH etc.)
+python simple_cnn_asl_with_classical_classifiers.py
+
+Suggested additions to repo for full reproducibility
+
+requirements_simple_cnn.txt (exact versions — use pip freeze > requirements_simple_cnn.txt after creating your env).
+
+run_simple_cnn.sh (or .bat) to run end-to-end with environment activation.
+
+Save a small results_manifest.txt with the exact seed, dataset path, and time of run for record.
