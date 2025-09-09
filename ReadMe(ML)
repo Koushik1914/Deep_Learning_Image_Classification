@@ -1,0 +1,199 @@
+# ASL Feature Extraction & Evaluation
+
+A comprehensive classical feature extraction and evaluation pipeline for American Sign Language (ASL) datasets using handcrafted features and traditional machine learning classifiers.
+
+## 🚀 Features
+
+- **Multiple Feature Extractors**: HOG, SIFT, GLCM, ORB feature extraction
+- **Classical ML Classifiers**: Logistic Regression, Random Forest, KNN, Decision Tree
+- **Comprehensive Evaluation**: Accuracy, F1-score, Cohen's Kappa, Matthews Correlation Coefficient
+- **Cross-Validation**: Built-in k-fold cross-validation
+- **Robustness Testing**: Noise robustness evaluation
+- **Rich Visualizations**: Heatmaps, confusion matrices, class-wise accuracy plots
+- **Export Results**: CSV summary of all metrics
+
+## 📋 Requirements
+
+### System Requirements
+- Python 3.7+
+- OpenCV-compatible system
+
+### Dependencies
+```bash
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+scikit-image
+opencv-python
+opencv-contrib-python  # Required for SIFT on some systems
+scipy
+```
+
+## 🛠️ Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/asl-feature-extraction.git
+   cd asl-feature-extraction
+   ```
+
+2. **Create a virtual environment** (recommended)
+   ```bash
+   python -m venv venv
+   
+   # On Windows
+   venv\Scripts\activate
+   
+   # On macOS/Linux
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements_feature_extraction.txt
+   ```
+
+   > **Note**: If `opencv-contrib-python` installation fails, the script will automatically fall back to ORB features instead of SIFT.
+
+## 📁 Dataset Structure
+
+Organize your ASL dataset in the following structure:
+
+```
+dataset_root/
+├── class_0/
+│   ├── img1.jpg
+│   ├── img2.jpg
+│   └── ...
+├── class_1/
+│   ├── img1.jpg
+│   └── ...
+└── class_n/
+    └── ...
+```
+
+## ⚙️ Configuration
+
+Edit the configuration variables in `asl_feature_analysis.py`:
+
+```python
+# Required: Path to your dataset
+DATASET_PATH = r"C:\path\to\your\asl_dataset"
+
+# Optional: Adjust these parameters as needed
+IMG_SIZE = (128, 128)                # Target image size for feature extraction
+MAX_SAMPLES_PER_CLASS = 150         # Limit samples per class (memory optimization)
+```
+
+## 🚀 Usage
+
+### Basic Usage
+
+```bash
+python asl_feature_analysis.py
+```
+
+### Advanced Configuration
+
+You can modify the feature extractors and classifiers by editing the respective sections in the script:
+
+- **Feature Methods**: Add/remove in `run_comprehensive_analysis()` function
+- **Classifiers**: Modify hyperparameters in `evaluate_feature_method()` function
+
+## 📊 Output
+
+### Console Output
+- Dataset summary and per-class sample counts
+- Detailed per-classifier and per-feature method metrics
+- Noise robustness test results
+- Performance recommendations
+
+### Generated Files
+- `asl_feature_analysis_results.csv` - Comprehensive metrics summary
+- Interactive visualizations (via matplotlib):
+  - Accuracy/F1/Cohen's Kappa heatmaps
+  - Confusion matrix for best performing combination
+  - Class-wise accuracy bar plots
+
+### Sample Output Structure
+```
+Results/
+├── asl_feature_analysis_results.csv
+└── visualizations/
+    ├── accuracy_heatmap.png
+    ├── confusion_matrix.png
+    └── class_accuracy.png
+```
+
+## 🔬 Reproducibility
+
+For reproducible results, add seed control at the top of your script:
+
+```python
+import os
+import random
+import numpy as np
+
+SEED = 42
+os.environ['PYTHONHASHSEED'] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+```
+
+> **Note**: While this reduces variation, bitwise identical results across different machines/BLAS implementations are not guaranteed.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📚 Citation
+
+If you use this code in your research, please cite:
+
+```bibtex
+@misc{asl-feature-extraction,
+  title={ASL Feature Extraction and Evaluation Pipeline},
+  author={Your Name},
+  year={2025},
+  url={https://github.com/yourusername/asl-feature-extraction}
+}
+```
+
+## ❓ Troubleshooting
+
+### Common Issues
+
+**SIFT not available**: 
+```
+Solution: Install opencv-contrib-python or the script will automatically fall back to ORB
+```
+
+**Memory errors with large datasets**:
+```
+Solution: Reduce MAX_SAMPLES_PER_CLASS or IMG_SIZE in configuration
+```
+
+**Import errors**:
+```
+Solution: Ensure all dependencies are installed in your virtual environment
+```
+
+## 📈 Performance Tips
+
+- Start with smaller `IMG_SIZE` (64x64) for faster initial testing
+- Use `MAX_SAMPLES_PER_CLASS` to limit memory usage on large datasets
+- Consider GPU acceleration for larger feature extraction tasks
+
+## 🏷️ Tags
+
+`computer-vision` `machine-learning` `asl` `feature-extraction` `classification` `opencv` `scikit-learn`
