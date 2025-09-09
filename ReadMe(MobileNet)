@@ -1,0 +1,251 @@
+README — ASL Recognition: handcrafted features, simple CNN, and pretrained CNN pipelines
+Project overview
+
+This repository contains three evaluation pipelines for an ASL dataset (folder-per-class):
+
+asl_feature_analysis.py — classical (handcrafted) feature extraction & evaluation (HOG, SIFT, GLCM, ORB) with classical classifiers.
+
+simple_cnn_asl_with_classical_classifiers.py — train a small CNN, evaluate, extract CNN features and train classical classifiers on them.
+
+pretrained_cnn_asl_with_classical_classifiers.py — transfer-learning with MobileNetV2 / EfficientNetB0 (two-stage: frozen backbone then fine-tune), evaluate, extract features and run classical classifiers.
+
+Each script prints metrics (accuracy, precision/recall/F1, Cohen’s Kappa, ROC-AUC where available), saves visual artifacts (confusion matrices, ROC/curves, training plots), and tests robustness under Gaussian noise.
+
+Repo layout (recommended)
+/ (repo root)
+  README.md                 # this file
+  requirements.txt          # combined requirements (see below)
+  asl_feature_analysis.py   # script 1 (handcrafted features)
+  simple_cnn_asl_with_classical_classifiers.py   # script 2
+  pretrained_cnn_asl_with_classical_classifiers.py  # script 3
+  runs_simple_cnn/          # outputs from script 2
+  runs_pretrained_mobilenetv2/   # outputs from script 3 (name depends on BACKBONE)
+  results/                  # put final figures / CSVs here
+  data/                     # your dataset (not tracked in git) -> see data layout below
+
+Dataset format
+
+Place your dataset (test/train combined; scripts internally split) at a path like:
+
+<DATASET_ROOT>/
+    0/     # class folder named '0'
+       img1.png
+       img2.jpg
+    1/
+    2/
+    a/
+    b/
+    ...
+
+
+Each top-level folder is one class. Scripts expect this layout (no extra nesting). Update the DATASET_PATH variable at the top of each script OR set environment variables as described below.
+
+Environment & installation
+
+Create & activate a virtual environment:
+
+# Linux / macOS
+python -m venv venv
+source venv/bin/activate
+
+# Windows (PowerShell)
+python -m venv venv
+venv\Scripts\Activate.ps1
+
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Suggested requirements.txt (copy into repo)
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+scikit-image
+opencv-python
+# Optional for SIFT:
+opencv-contrib-python
+tensorflow>=2.10
+joblib
+scipy
+
+
+If you plan to use SIFT (script 1), install opencv-contrib-python; otherwise opencv-python is usually enough.
+
+Reproducibility / Determinism
+
+Add at top of each script (already included in your code) — keep these lines:
+
+SEED = 42
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+
+
+Recommended extra (optional, may slow training):
+
+import os, random
+os.environ['PYTHONHASHSEED'] = str(SEED)
+random.seed(SEED)
+os.environ['TF_DETERMINISTIC_OPS'] = '1'
+
+
+Record exact package versions with:
+
+pip freeze > requirements_freeze.txt
+
+Quick run instructions (per script)
+1) Handcrafted features & evaluation — asl_feature_analysis.py
+
+Purpose: extract HOG/SIFT/GLCM/ORB, train LogisticRegression/RandomForest/KNN/DecisionTree, cross-validate, robustness test, visualizations.
+
+Edit (if needed):
+
+DATASET_PATH = r"C:\path\to\asl_dataset"
+IMG_SIZE = (128, 128)
+MAX_SAMPLES_PER_CLASS = 150
+
+
+Run:
+
+python asl_feature_analysis.py
+
+
+Output:
+
+asl_feature_analysis_results.csv (summary)
+
+Visualizations shown interactively (and you can modify script to save them)
+
+Notes:
+
+If GLCM functions missing, script falls back to HOG for that step.
+
+If SIFT raises errors, install opencv-contrib-python or it will fallback.
+
+2) Simple CNN + classical classifiers — simple_cnn_asl_with_classical_classifiers.py
+
+Purpose: train small CNN, evaluate on test set, extract penultimate features and train classical classifiers on those features, robustness tests.
+
+Edit variables at top:
+
+DATASET_PATH = r"C:\path\to\split\asl_dataset"
+IMG_SIZE = (64, 64)
+CHANNELS = 1  # 1 for grayscale, 3 for RGB
+MAX_PER_CLASS = 500
+EPOCHS = 30
+OUT_DIR = "runs_simple_cnn"
+
+
+Run:
+
+python simple_cnn_asl_with_classical_classifiers.py
+
+
+Output in runs_simple_cnn/:
+
+best_simple_cnn.keras, final_simple_cnn.keras
+
+training_curves.png, confusion_matrix.png, sample_predictions.png
+
+clf_<Name>.joblib for each trained classical classifier
+
+3) Pretrained CNN (MobileNetV2 / EfficientNet) + classical classifiers — pretrained_cnn_asl_with_classical_classifiers.py
+
+Purpose: two-stage transfer learning (freeze then fine-tune), evaluation, extract GAP features and train classical classifiers, robustness tests.
+
+Edit at top:
+
+DATASET_PATH = r"C:\path\to\split\asl_dataset"
+IMG_SIZE = (64, 64)           # model input for pre-resize step
+CHANNELS = 1
+BACKBONE = "mobilenetv2"      # or "efficientnetb0"
+EPOCHS_STAGE1 = 10
+EPOCHS_STAGE2 = 10
+OUT_DIR = f"runs_pretrained_{BACKBONE}"
+
+
+Run:
+
+python pretrained_cnn_asl_with_classical_classifiers.py
+
+
+Output in runs_pretrained_mobilenetv2/ (or runs_pretrained_efficientnetb0/):
+
+best_{backbone}_stage1.keras, best_{backbone}_stage2.keras
+
+final_{backbone}.keras, final_{backbone}.h5
+
+training_curves.png, confusion_matrix.png, sample_predictions.png
+
+clf_<Name>.joblib for each classical classifier
+
+Combined / recommended workflow
+
+Run asl_feature_analysis.py for baseline handcrafted-features performance.
+
+Run simple_cnn... to train small CNN and test classical classifiers on CNN features.
+
+Run pretrained_cnn... to evaluate transfer learning models and their classical classifier variants.
+
+Order is not required, but this progression shows improvement from handcrafted → small CNN → pretrained transfer learning.
+
+Example convenience scripts
+run_all.sh (Linux / macOS)
+#!/usr/bin/env bash
+set -e
+source venv/bin/activate     # adjust if not using venv
+python asl_feature_analysis.py
+python simple_cnn_asl_with_classical_classifiers.py
+python pretrained_cnn_asl_with_classical_classifiers.py
+echo "All scripts finished."
+
+run_all.bat (Windows)
+@echo off
+call venv\Scripts\activate
+python asl_feature_analysis.py
+python simple_cnn_asl_with_classical_classifiers.py
+python pretrained_cnn_asl_with_classical_classifiers.py
+echo All scripts finished.
+pause
+
+Expected metrics & how to report them
+
+Report: Accuracy, Macro F1, Weighted F1, Cohen’s Kappa, ROC-AUC (micro/macro where applicable), Robustness under Gaussian noise (report accuracies at σ = 0.05, 0.10, 0.15).
+
+For pretrained experiments include: training scheme (stage1 frozen / stage2 fine-tune), backbone name, number of epochs, and any label smoothing used.
+
+Example short text for report:
+
+“Fine-tuned MobileNetV2 achieved 96.4% accuracy (macro-AUC = 0.91). Under Gaussian noise (σ=0.10), accuracy drops to 75.7%, indicating sensitivity to image perturbation. Cohen’s Kappa = 0.97 confirms high agreement beyond chance.”
+
+(Replace numbers with your actual outputs.)
+
+Troubleshooting (common issues)
+
+Dataset path does not exist: verify DATASET_PATH variable and folder structure.
+
+No images loaded: dataset subfolders may be empty or file extensions unsupported; check allowed extensions.
+
+cv2.SIFT_create() missing: install opencv-contrib-python or let the code fallback to ORB.
+
+Memory / OOM errors: reduce MAX_PER_CLASS, reduce BATCH_SIZE, or run feature extraction method-by-method.
+
+Model input mismatch: scripts resize/convert channels automatically, but if your saved model expects a different input shape, inspect model.input_shape and set IMG_SIZE and CHANNELS to match.
+
+Custom objects when loading model: if you later load a .h5 model with custom Lambda layers (e.g., preprocess_input), pass custom_objects into load_model.
+
+Save / publish experiment artifacts
+
+Save the following in results/ so reviewers can quickly inspect:
+
+roc_plot.png, confusion_matrix.png, training_curves.png, asl_feature_analysis_results.csv, metrics.json (you can create one by dumping printed metrics), and predictions.npz (save y_true, y_pred, y_score).
+
+Example code to save predictions (insert into scripts where predictions are computed):
+
+np.savez("results/predictions.npz", y_true=y_true, y_pred=y_pred, y_score=y_pred_proba)
+import json
+metrics = {"accuracy": acc, "kappa": kappa}
+with open("results/metrics.json","w") as f:
+    json.dump(metrics, f, indent=2)
